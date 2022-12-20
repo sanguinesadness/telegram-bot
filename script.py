@@ -119,21 +119,23 @@ def get_weather(location):
 def get_ticker(ticker):
     stock = yf.Ticker(f"{ticker}")
     hist = stock.history(period="1y")
-    graph = make_subplots(specs=[[{"secondary_y": True}]])
-    graph.add_trace(go.Candlestick(x=hist.index,
-                                   open=hist['Open'],
-                                   high=hist['High'],
-                                   low=hist['Low'],
-                                   close=hist['Close'],
-                                   ))
-    graph.update_layout(xaxis_rangeslider_visible=False)
-    if not os.path.exists("images"):
-        os.mkdir("images")
-    graph.to_image()
-    graph.write_image(f"images/{ticker}.png")
-
-    result = ticker
-    return result
+    if len(hist.index) > 20:
+        graph = make_subplots(specs=[[{"secondary_y": True}]])
+        graph.add_trace(go.Candlestick(x=hist.index,
+                                       open=hist['Open'],
+                                       high=hist['High'],
+                                       low=hist['Low'],
+                                       close=hist['Close'],
+                                       ))
+        graph.update_layout(xaxis_rangeslider_visible=False)
+        if not os.path.exists("images"):
+            os.mkdir("images")
+        graph.to_image()
+        graph.write_image(f"images/{ticker}.png")
+        work = True
+    else:
+        work = False
+    return work
 
 
 owm = OWM(config.open_weather_token)
@@ -175,7 +177,7 @@ def get_text_messages(message):
             bot.send_photo(message.from_user.id, photo=weather['icon_url'])
     elif telebot.State == "stock info":
         ticker = get_ticker(message.text)
-        if os.path.exists(f"images/{ticker}.png"):
+        if ticker:
             bot.send_document(message.from_user.id, InputFile(f'images/{ticker}.png'))
         else:
             bot.send_message(message.from_user.id, text="Простите, но тикер не был найден")
