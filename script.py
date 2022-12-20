@@ -5,10 +5,11 @@ from dostoevsky.models import FastTextSocialNetworkModel
 from pyowm import OWM
 from PIL import Image
 from translate import Translator
+import config
 import requests
 
 
-owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
+owm = OWM(config.open_weather_token)
 
 # Получение наиболее вероятного предикта по тональности
 def get_biggest_tone_item(tone):
@@ -34,17 +35,13 @@ def get_text_tone(sentences):
   return result
 
 
-
-im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
-
-weather_manager = owm.weather_manager()
-
 def get_weather_icon_url(weather):
   try:
     icon = weather.weather_icon_name
     return f'http://openweathermap.org/img/wn/{icon}@2x.png'
   except:
     return None
+
 
 def get_weather_info_str(weather):
   status = ''
@@ -67,30 +64,31 @@ def get_weather_info_str(weather):
     wind = f'\nСкорость ветра: {wind_speed} м/с'
   except:
     pass
-  
+
   try:
     humidity = f'\nВлажность: {weather.humidity}%'
   except:
     pass
-  
+
   try:
     temp = weather.temperature('celsius')['temp']
     temperature = f'\nТемпература: {temp} °C'
   except:
     pass
-  
+
   try:
     clouds = f'\nОблачность: {weather.clouds}%'
   except:
     pass
-  
+
   try:
     press = weather.pressure['press']
     pressure = f'\nДавление: {press} Па'
   except:
     pass
-  
+
   return status + wind + humidity + temperature + clouds + pressure
+
 
 def get_weather(location):
   result = {}
@@ -104,8 +102,9 @@ def get_weather(location):
     result['result_str'] = 'Не удалось найти информацию о погоде в данной локации, попробуй еще раз.'
   return result
 
-bot = telebot.TeleBot('5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg')
-
+im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
+weather_manager = owm.weather_manager()
+bot = telebot.TeleBot(config.telegram_token)
 telebot.State = ""
 
 @bot.message_handler(commands=['start', 'change_mode'])
