@@ -3,11 +3,12 @@ from telebot import types
 from dostoevsky.tokenization import RegexTokenizer
 from dostoevsky.models import FastTextSocialNetworkModel
 from pyowm import OWM
+from PIL import Image
+from translate import Translator
+import requests
+
 
 owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
-
-!pip install translate
-from translate import Translator
 
 # Получение наиболее вероятного предикта по тональности
 def get_biggest_tone_item(tone):
@@ -32,8 +33,7 @@ def get_text_tone(sentences):
     i += 1
   return result
 
-from PIL import Image
-import requests
+
 
 im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
 
