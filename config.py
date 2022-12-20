@@ -1,2 +1,2 @@
-telegram_token = '5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg'
+telegram_token = '5847906057:AAFiVdDSYHujtoqjmIb_OZS2sBhDuWPqDXM'
 open_weather_token = 'e8dbdc96dd5f9b1eabf0666cec75e7c8'
