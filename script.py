@@ -1,9 +1,5 @@
 # Работа с ботом
 import telebot
-from telebot import types
-# Работа с определением тональности текста
-from dostoevsky.tokenization import RegexTokenizer
-from dostoevsky.models import FastTextSocialNetworkModel
 # Работа с определением погоды
 from pyowm import OWM
 # Работа с передачей и отрисовкой картинок
@@ -22,30 +18,6 @@ import requests
 import os
 import random
 from datetime import datetime
-
-# Получение наиболее вероятного предикта по тональности
-def get_biggest_tone_item(tone):
-    result = {}
-    max_tone = -1
-    for key, value in tone.items():
-        if value > max_tone:
-            result = (key, value)
-            max_tone = value
-    return result
-
-
-# Получение информации о тональности текста (по предложениям)
-def get_text_tone(sentences):
-    tokenizer = RegexTokenizer()
-    model = FastTextSocialNetworkModel(tokenizer=tokenizer)
-    tones = model.predict(sentences, k=2)
-    result = []
-    i = 0
-    for tone in tones:
-        predict = get_biggest_tone_item(tone)
-        result.append({'text': sentences[i], 'tone': tone, 'predict': predict})
-        i += 1
-    return result
 
 
 def get_weather_icon_url(weather):
@@ -177,7 +149,7 @@ def get_ticker(ticker):
         graph.add_trace(
             go.Scatter(x=hist.index, y=hist['Close'].rolling(window=20).mean(), name='20 Day MA'))
         graph.add_trace(go.Bar(x=hist.index, y=hist['Volume'], name='Volume', marker={'color': hist['color']}),
-                       secondary_y=True)
+                        secondary_y=True)
         graph.update_yaxes(range=[0, 700000000], secondary_y=True)
         graph.update_yaxes(visible=False, secondary_y=True)
         graph.update_layout(xaxis_rangeslider_visible=False)  # hide range slider
@@ -314,18 +286,18 @@ def clear_game_field():
 
 
 def get_game_field():
-    keyboard = types.InlineKeyboardMarkup()
+    keyboard = telebot.types.InlineKeyboardMarkup()
 
     for i in range(0, 3):
         keyboard.add(
-            types.InlineKeyboardButton(text=tictactoe[i][0], callback_data="{0},0".format(i)),
-            types.InlineKeyboardButton(text=tictactoe[i][1], callback_data="{0},1".format(i)),
-            types.InlineKeyboardButton(text=tictactoe[i][2], callback_data="{0},2".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][0], callback_data="{0},0".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][1], callback_data="{0},1".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][2], callback_data="{0},2".format(i)),
         )
 
     keyboard.add(
-        types.InlineKeyboardButton(text='Начать заново', callback_data="restart"),
-        types.InlineKeyboardButton(text='Завершить игру', callback_data="finish")
+        telebot.types.InlineKeyboardButton(text='Начать заново', callback_data="restart"),
+        telebot.types.InlineKeyboardButton(text='Завершить игру', callback_data="finish")
     )
 
     return keyboard
@@ -334,17 +306,17 @@ def get_game_field():
 owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
 im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
 weather_manager = owm.weather_manager()
-bot = telebot.TeleBot('5847906057:AAFiVdDSYHujtoqjmIb_OZS2sBhDuWPqDXM')
+bot = telebot.TeleBot('5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg')
 telebot.State = ""
 
 
 @bot.message_handler(commands=['start', 'change_mode'])
 def start(message):
-    keyboard = types.InlineKeyboardMarkup()
-    key_weather = types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
-    key_forecast = types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
-    key_graph = types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
-    key_tictactoe = types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    key_weather = telebot.types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
+    key_forecast = telebot.types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
+    key_graph = telebot.types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
+    key_tictactoe = telebot.types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
     keyboard.add(key_weather)
     keyboard.add(key_forecast)
     keyboard.add(key_graph)
@@ -359,13 +331,7 @@ def help(message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    if telebot.State == "tones":
-        tone_info = get_text_tone([message.text])
-        tone_key = tone_info[0]['predict'][0]
-        tone_value = round(tone_info[0]['predict'][1], 2)
-        bot.send_message(message.from_user.id, text=f'Тональность: {tone_key}'
-                                                    f'\nВероятность: {tone_value}')
-    elif telebot.State == "weather":
+    if telebot.State == "weather":
         weather = get_weather(message.text)
         bot.send_message(message.from_user.id, text=weather['result_str'])
         if 'icon_url' in weather:
@@ -386,10 +352,7 @@ def get_text_messages(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    if call.data == 'tones':
-        telebot.State = 'tones'
-        bot.send_message(call.message.chat.id, text='Набери текст и я определю его тональность')
-    elif call.data == 'weather':
+    if call.data == 'weather':
         telebot.State = 'weather'
         bot.send_message(call.message.chat.id, text='Погода в каком городе/регионе тебя интересует?')
     elif call.data == 'forecast':
