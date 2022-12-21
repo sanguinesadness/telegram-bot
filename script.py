@@ -330,12 +330,10 @@ telebot.State = ""
 @bot.message_handler(commands=['start', 'change_mode'])
 def start(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
-    key_tones = telebot.types.InlineKeyboardButton(text='Определить тональность текста', callback_data='tones')
     key_weather = telebot.types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
     key_forecast = telebot.types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
     key_graph = telebot.types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
     key_tictactoe = telebot.types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
-    keyboard.add(key_tones)
     keyboard.add(key_weather)
     keyboard.add(key_forecast)
     keyboard.add(key_graph)
