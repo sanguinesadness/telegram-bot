@@ -23,6 +23,7 @@ import requests
 import os
 from datetime import datetime
 
+
 # Получение наиболее вероятного предикта по тональности
 def get_biggest_tone_item(tone):
     result = {}
@@ -115,66 +116,73 @@ def get_weather(location):
         result['result_str'] = 'Не удалось найти информацию о погоде в данной локации, попробуй еще раз.'
     return result
 
+
 def get_forecast_weather_str(weather):
-  day = ''
-  status = ''
-  temperature = ''
+    day = ''
+    status = ''
+    temperature = ''
 
-  translator = Translator(to_lang="ru")
+    translator = Translator(to_lang="ru")
 
-  try:
-    dt = datetime.fromtimestamp(weather.ref_time)
-    day = f'Дата: {dt.date()}'
-  except:
-    pass
+    try:
+        dt = datetime.fromtimestamp(weather.ref_time)
+        day = f'Дата: {dt.date()}'
+    except:
+        pass
 
-  try:
-    status_rus = translator.translate(weather.detailed_status).capitalize()
-    status = f'\nПогода: {status_rus}'
-  except:
-    pass
+    try:
+        status_rus = translator.translate(weather.detailed_status).capitalize()
+        status = f'\nПогода: {status_rus}'
+    except:
+        pass
 
-  try:
-    temp = weather.temperature('celsius')
-    max = temp['max']
-    min = temp['min']
-    temperature = f'\nТемпература: макс. {max}°C, мин. {min}°C'
-  except:
-    pass
+    try:
+        temp = weather.temperature('celsius')
+        max = temp['max']
+        min = temp['min']
+        temperature = f'\nТемпература: макс. {max}°C, мин. {min}°C'
+    except:
+        pass
 
-  return day + status + temperature
+    return day + status + temperature
+
 
 def get_forecast(location):
-  try:
-    loc = weather_manager.weather_at_place(location).location
-    location_str = f'Координаты: широта {loc.lat}, долгота {loc.lon}\n'
-    forecast = weather_manager.one_call(loc.lat, loc.lon).forecast_daily
-    days = list(map(lambda w: get_forecast_weather_str(w), forecast))
-    result_str = location_str
-    for day in days:
-      result_str += '\n' + day + '\n'
-    return result_str
-  except:
-    return 'Не удалось найти информацию о погоде в данной локации, попробуй еще раз.'
+    try:
+        loc = weather_manager.weather_at_place(location).location
+        location_str = f'Координаты: широта {loc.lat}, долгота {loc.lon}\n'
+        forecast = weather_manager.one_call(loc.lat, loc.lon).forecast_daily
+        days = list(map(lambda w: get_forecast_weather_str(w), forecast))
+        result_str = location_str
+        for day in days:
+            result_str += '\n' + day + '\n'
+        return result_str
+    except:
+        return 'Не удалось найти информацию о погоде в данной локации, попробуй еще раз.'
 
 
 def get_ticker(ticker):
-    stock = yf.Ticker(f"{ticker}")
+    result = {}
+    result["ticker"] = str(ticker)
+    stock = yf.Ticker(str(ticker))
     hist = stock.history(period="1y")
-    graph = make_subplots(specs=[[{"secondary_y": True}]])
-    graph.add_trace(go.Candlestick(x=hist.index,
-                                   open=hist['Open'],
-                                   high=hist['High'],
-                                   low=hist['Low'],
-                                   close=hist['Close'],
-                                   ))
-    graph.update_layout(xaxis_rangeslider_visible=False)
-    if not os.path.exists("images"):
-        os.mkdir("images")
-    graph.to_image()
-    graph.write_image(f"images/{ticker}.png")
-
-    result = ticker
+    if len(hist.index) > 20:
+        graph = make_subplots(specs=[[{"secondary_y": True}]])
+        graph.add_trace(go.Candlestick(x=hist.index,
+                                       open=hist['Open'],
+                                       high=hist['High'],
+                                       low=hist['Low'],
+                                       close=hist['Close'],
+                                       ))
+        graph.update_layout(xaxis_rangeslider_visible=False)
+        if not os.path.exists("images"):
+            os.mkdir("images")
+        graph.to_image()
+        graph.write_image(f"images/{ticker}.png")
+        work = True
+    else:
+        work = False
+    result["work"] = bool(work)
     return result
 
 
@@ -223,10 +231,10 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, text=forecast)
     elif telebot.State == "stock info":
         ticker = get_ticker(message.text)
-        if os.path.exists(f"images/{ticker}.png"):
-            bot.send_document(message.from_user.id, InputFile(f'images/{ticker}.png'))
+        if bool(ticker["work"]):
+            bot.send_document(message.from_user.id, InputFile(f'images/{ticker["ticker"]}.png'))
         else:
-            bot.send_message(message.from_user.id, text="Простите, но тикер не был найден")
+            bot.send_message(message.from_user.id, text="Простите, но тикер не был найден(")
     else:
         bot.send_message(message.from_user.id, text='Я тебя не понимаю, чтобы начать напиши /start')
 
