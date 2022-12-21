@@ -8,3 +8,4 @@ urllib3==1.26.13
 pyowm==3.3.0
 translate==3.6.1
 dostoevsky==0.6.0
+Pillow==9.0.1
