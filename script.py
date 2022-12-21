@@ -1,6 +1,5 @@
 # Работа с ботом
 import telebot
-from telebot import types
 # Работа с определением тональности текста
 from dostoevsky.tokenization import RegexTokenizer
 from dostoevsky.models import FastTextSocialNetworkModel
@@ -304,18 +303,18 @@ def clear_game_field():
 
 
 def get_game_field():
-    keyboard = types.InlineKeyboardMarkup()
+    keyboard = telebot.types.InlineKeyboardMarkup()
 
     for i in range(0, 3):
         keyboard.add(
-            types.InlineKeyboardButton(text=tictactoe[i][0], callback_data="{0},0".format(i)),
-            types.InlineKeyboardButton(text=tictactoe[i][1], callback_data="{0},1".format(i)),
-            types.InlineKeyboardButton(text=tictactoe[i][2], callback_data="{0},2".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][0], callback_data="{0},0".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][1], callback_data="{0},1".format(i)),
+            telebot.types.InlineKeyboardButton(text=tictactoe[i][2], callback_data="{0},2".format(i)),
         )
 
     keyboard.add(
-        types.InlineKeyboardButton(text='Начать заново', callback_data="restart"),
-        types.InlineKeyboardButton(text='Завершить игру', callback_data="finish")
+        telebot.types.InlineKeyboardButton(text='Начать заново', callback_data="restart"),
+        telebot.types.InlineKeyboardButton(text='Завершить игру', callback_data="finish")
     )
 
     return keyboard
@@ -330,12 +329,12 @@ telebot.State = ""
 
 @bot.message_handler(commands=['start', 'change_mode'])
 def start(message):
-    keyboard = types.InlineKeyboardMarkup()
-    key_tones = types.InlineKeyboardButton(text='Определить тональность текста', callback_data='tones')
-    key_weather = types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
-    key_forecast = types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
-    key_graph = types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
-    key_tictactoe = types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    key_tones = telebot.types.InlineKeyboardButton(text='Определить тональность текста', callback_data='tones')
+    key_weather = telebot.types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
+    key_forecast = telebot.types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
+    key_graph = telebot.types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
+    key_tictactoe = telebot.types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
     keyboard.add(key_tones)
     keyboard.add(key_weather)
     keyboard.add(key_forecast)
