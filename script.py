@@ -171,7 +171,17 @@ def get_ticker(ticker):
                                        low=hist['Low'],
                                        close=hist['Close'],
                                        ))
-        graph.update_layout(xaxis_rangeslider_visible=False)
+        hist['diff'] = hist['Close'] - hist['Open']
+        hist.loc[hist['diff'] >= 0, 'color'] = 'green'
+        hist.loc[hist['diff'] < 0, 'color'] = 'red'
+        graph.add_trace(
+            go.Scatter(x=hist.index, y=hist['Close'].rolling(window=20).mean(), name='20 Day MA'))
+        graph.add_trace(go.Bar(x=hist.index, y=hist['Volume'], name='Volume', marker={'color': hist['color']}),
+                       secondary_y=True)
+        graph.update_yaxes(range=[0, 700000000], secondary_y=True)
+        graph.update_yaxes(visible=False, secondary_y=True)
+        graph.update_layout(xaxis_rangeslider_visible=False)  # hide range slider
+        graph.update_layout(title={'text': f'{ticker}', 'x': 0.5})
         if not os.path.exists("images"):
             os.mkdir("images")
         graph.to_image()
@@ -324,19 +334,17 @@ def get_game_field():
 owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
 im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
 weather_manager = owm.weather_manager()
-bot = telebot.TeleBot('5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg')
+bot = telebot.TeleBot('5847906057:AAFiVdDSYHujtoqjmIb_OZS2sBhDuWPqDXM')
 telebot.State = ""
 
 
 @bot.message_handler(commands=['start', 'change_mode'])
 def start(message):
     keyboard = types.InlineKeyboardMarkup()
-    key_tones = types.InlineKeyboardButton(text='Определить тональность текста', callback_data='tones')
     key_weather = types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
     key_forecast = types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
     key_graph = types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
     key_tictactoe = types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
-    keyboard.add(key_tones)
     keyboard.add(key_weather)
     keyboard.add(key_forecast)
     keyboard.add(key_graph)
