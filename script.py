@@ -1,8 +1,5 @@
 # Работа с ботом
 import telebot
-# Работа с определением тональности текста
-from dostoevsky.tokenization import RegexTokenizer
-from dostoevsky.models import FastTextSocialNetworkModel
 # Работа с определением погоды
 from pyowm import OWM
 # Работа с передачей и отрисовкой картинок
@@ -21,31 +18,6 @@ import requests
 import os
 import random
 from datetime import datetime
-
-# Получение наиболее вероятного предикта по тональности
-def get_biggest_tone_item(tone):
-    result = {}
-    max_tone = -1
-    for key, value in tone.items():
-        if value > max_tone:
-            result = (key, value)
-            max_tone = value
-    return result
-
-
-# Получение информации о тональности текста (по предложениям)
-def get_text_tone(sentences):
-    tokenizer = RegexTokenizer()
-    model = FastTextSocialNetworkModel(tokenizer=tokenizer)
-    tones = model.predict(sentences, k=2)
-    result = []
-    i = 0
-    for tone in tones:
-        predict = get_biggest_tone_item(tone)
-        result.append({'text': sentences[i], 'tone': tone, 'predict': predict})
-        i += 1
-    return result
-
 
 def get_weather_icon_url(weather):
     try:
@@ -348,13 +320,7 @@ def help(message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    if telebot.State == "tones":
-        tone_info = get_text_tone([message.text])
-        tone_key = tone_info[0]['predict'][0]
-        tone_value = round(tone_info[0]['predict'][1], 2)
-        bot.send_message(message.from_user.id, text=f'Тональность: {tone_key}'
-                                                    f'\nВероятность: {tone_value}')
-    elif telebot.State == "weather":
+    if telebot.State == "weather":
         weather = get_weather(message.text)
         bot.send_message(message.from_user.id, text=weather['result_str'])
         if 'icon_url' in weather:
@@ -375,10 +341,7 @@ def get_text_messages(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    if call.data == 'tones':
-        telebot.State = 'tones'
-        bot.send_message(call.message.chat.id, text='Набери текст и я определю его тональность')
-    elif call.data == 'weather':
+    if call.data == 'weather':
         telebot.State = 'weather'
         bot.send_message(call.message.chat.id, text='Погода в каком городе/регионе тебя интересует?')
     elif call.data == 'forecast':
