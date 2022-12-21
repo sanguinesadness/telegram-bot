@@ -159,22 +159,27 @@ def get_forecast(location):
 
 
 def get_ticker(ticker):
-    stock = yf.Ticker(f"{ticker}")
+    result = {}
+    result["ticker"] = str(ticker)
+    stock = yf.Ticker(str(ticker))
     hist = stock.history(period="1y")
-    graph = make_subplots(specs=[[{"secondary_y": True}]])
-    graph.add_trace(go.Candlestick(x=hist.index,
-                                   open=hist['Open'],
-                                   high=hist['High'],
-                                   low=hist['Low'],
-                                   close=hist['Close'],
-                                   ))
-    graph.update_layout(xaxis_rangeslider_visible=False)
-    if not os.path.exists("images"):
-        os.mkdir("images")
-    graph.to_image()
-    graph.write_image(f"images/{ticker}.png")
-
-    result = ticker
+    if len(hist.index) > 20:
+        graph = make_subplots(specs=[[{"secondary_y": True}]])
+        graph.add_trace(go.Candlestick(x=hist.index,
+                                       open=hist['Open'],
+                                       high=hist['High'],
+                                       low=hist['Low'],
+                                       close=hist['Close'],
+                                       ))
+        graph.update_layout(xaxis_rangeslider_visible=False)
+        if not os.path.exists("images"):
+            os.mkdir("images")
+        graph.to_image()
+        graph.write_image(f"images/{ticker}.png")
+        work = True
+    else:
+        work = False
+    result["work"] = bool(work)
     return result
 
 tictactoe = [
@@ -363,8 +368,8 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, text=forecast)
     elif telebot.State == "stock info":
         ticker = get_ticker(message.text)
-        if os.path.exists(f"images/{ticker}.png"):
-            bot.send_document(message.from_user.id, InputFile(f'images/{ticker}.png'))
+        if bool(ticker["work"]):
+            bot.send_document(message.from_user.id, InputFile(f'images/{ticker["ticker"]}.png'))
         else:
             bot.send_message(message.from_user.id, text="Простите, но тикер не был найден")
     else:
