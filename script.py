@@ -18,7 +18,59 @@ import requests
 import os
 import random
 from datetime import datetime
+import wikipedia
 
+owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
+weather_manager = owm.weather_manager()
+
+bot = telebot.TeleBot('5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg')
+telebot.State = ""
+
+def get_wiki_page(query):
+  wikipedia.set_lang('ru')
+  result = ''
+  try:
+    page = wikipedia.page(query)
+    return page.title + '\n' + page.url
+  except:
+    search_res = wikipedia.search(query)
+    return 'Ничего не удалось найти :('
+
+  return page.url
+
+def get_ticker(ticker):
+    result = {}
+    result["ticker"] = str(ticker)
+    stock = yf.Ticker(str(ticker))
+    hist = stock.history(period="1y")
+    if len(hist.index) > 20:
+        graph = make_subplots(specs=[[{"secondary_y": True}]])
+        graph.add_trace(go.Candlestick(x=hist.index,
+                                       open=hist['Open'],
+                                       high=hist['High'],
+                                       low=hist['Low'],
+                                       close=hist['Close'],
+                                       ))
+        hist['diff'] = hist['Close'] - hist['Open']
+        hist.loc[hist['diff'] >= 0, 'color'] = 'green'
+        hist.loc[hist['diff'] < 0, 'color'] = 'red'
+        graph.add_trace(
+            go.Scatter(x=hist.index, y=hist['Close'].rolling(window=20).mean(), name='20 Day MA'))
+        graph.add_trace(go.Bar(x=hist.index, y=hist['Volume'], name='Volume', marker={'color': hist['color']}),
+                        secondary_y=True)
+        graph.update_yaxes(range=[0, 700000000], secondary_y=True)
+        graph.update_yaxes(visible=False, secondary_y=True)
+        graph.update_layout(xaxis_rangeslider_visible=False)  # hide range slider
+        graph.update_layout(title={'text': f'{ticker}', 'x': 0.5})
+        if not os.path.exists("images"):
+            os.mkdir("images")
+        graph.to_image()
+        graph.write_image(f"images/{ticker}.png")
+        work = True
+    else:
+        work = False
+    result["work"] = bool(work)
+    return result
 
 def get_weather_icon_url(weather):
     try:
@@ -26,7 +78,6 @@ def get_weather_icon_url(weather):
         return f'http://openweathermap.org/img/wn/{icon}@2x.png'
     except:
         return None
-
 
 def get_weather_info_str(weather):
     status = ''
@@ -128,42 +179,7 @@ def get_forecast(location):
     return result_str
   except:
     return 'Не удалось найти информацию о погоде в данной локации, попробуй еще раз.'
-
-
-def get_ticker(ticker):
-    result = {}
-    result["ticker"] = str(ticker)
-    stock = yf.Ticker(str(ticker))
-    hist = stock.history(period="1y")
-    if len(hist.index) > 20:
-        graph = make_subplots(specs=[[{"secondary_y": True}]])
-        graph.add_trace(go.Candlestick(x=hist.index,
-                                       open=hist['Open'],
-                                       high=hist['High'],
-                                       low=hist['Low'],
-                                       close=hist['Close'],
-                                       ))
-        hist['diff'] = hist['Close'] - hist['Open']
-        hist.loc[hist['diff'] >= 0, 'color'] = 'green'
-        hist.loc[hist['diff'] < 0, 'color'] = 'red'
-        graph.add_trace(
-            go.Scatter(x=hist.index, y=hist['Close'].rolling(window=20).mean(), name='20 Day MA'))
-        graph.add_trace(go.Bar(x=hist.index, y=hist['Volume'], name='Volume', marker={'color': hist['color']}),
-                        secondary_y=True)
-        graph.update_yaxes(range=[0, 700000000], secondary_y=True)
-        graph.update_yaxes(visible=False, secondary_y=True)
-        graph.update_layout(xaxis_rangeslider_visible=False)  # hide range slider
-        graph.update_layout(title={'text': f'{ticker}', 'x': 0.5})
-        if not os.path.exists("images"):
-            os.mkdir("images")
-        graph.to_image()
-        graph.write_image(f"images/{ticker}.png")
-        work = True
-    else:
-        work = False
-    result["work"] = bool(work)
-    return result
-
+  
 tictactoe = [
     ['-', '-', '-'],
     ['-', '-', '-'],
@@ -302,27 +318,20 @@ def get_game_field():
 
     return keyboard
 
-
-owm = OWM('e8dbdc96dd5f9b1eabf0666cec75e7c8')
-im = Image.open(requests.get('http://openweathermap.org/img/wn/10d@2x.png', stream=True).raw)
-weather_manager = owm.weather_manager()
-bot = telebot.TeleBot('5906067860:AAGlet1g81-7lALPTvKUFpyRkHeaAFxn4rg')
-telebot.State = ""
-
-
 @bot.message_handler(commands=['start', 'change_mode'])
 def start(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
+    key_wikipedia = telebot.types.InlineKeyboardButton(text='Найти статью в википедии', callback_data='wikipedia')
     key_weather = telebot.types.InlineKeyboardButton(text='Показать погоду в регионе', callback_data='weather')
     key_forecast = telebot.types.InlineKeyboardButton(text='Показать прогноз погоды в регионе', callback_data='forecast')
     key_graph = telebot.types.InlineKeyboardButton(text='Узнать динамику цены акции', callback_data='stock info')
     key_tictactoe = telebot.types.InlineKeyboardButton(text='Играть в крестики-нолики', callback_data='tictactoe')
+    keyboard.add(key_wikipedia)
     keyboard.add(key_weather)
     keyboard.add(key_forecast)
     keyboard.add(key_graph)
     keyboard.add(key_tictactoe)
     bot.send_message(message.from_user.id, text='Выбери действие', reply_markup=keyboard)
-
 
 @bot.message_handler(commands=['help'])
 def help(message):
@@ -331,12 +340,14 @@ def help(message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    if telebot.State == "weather":
+    if telebot.State == "wikipedia":
+        bot.send_message(message.from_user.id, text=get_wiki_page(message.text))
+    elif telebot.State == "weather":
         weather = get_weather(message.text)
         bot.send_message(message.from_user.id, text=weather['result_str'])
         if 'icon_url' in weather:
             bot.send_photo(message.from_user.id, photo=weather['icon_url'])
-    elif telebot.State == 'forecast':
+    elif telebot.State == "forecast":
         bot.send_message(message.from_user.id, text='Подожди, данные собираются...')
         forecast = get_forecast(message.text)
         bot.send_message(message.from_user.id, text=forecast)
@@ -352,7 +363,10 @@ def get_text_messages(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    if call.data == 'weather':
+    if call.data == 'wikipedia':
+        telebot.State = 'wikipedia'
+        bot.send_message(call.message.chat.id, text='По какому запросу выполнить поиск?')
+    elif call.data == 'weather':
         telebot.State = 'weather'
         bot.send_message(call.message.chat.id, text='Погода в каком городе/регионе тебя интересует?')
     elif call.data == 'forecast':

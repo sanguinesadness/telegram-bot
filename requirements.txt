@@ -10,3 +10,4 @@ translate==3.6.1
 Pillow==9.0.1
 plotly==5.11.0
 yfinance==0.2.3
+wikipedia==1.4.0
